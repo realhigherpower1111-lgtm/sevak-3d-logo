@@ -2,98 +2,176 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>SEVAK 3D</title>
+  <title>SEVAK 3D Logo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      background: black;
+      background: #000;
       overflow: hidden;
+      height: 100%;
     }
+
     canvas {
       display: block;
     }
+
+    /* Mobile fallback */
+    #mobileFallback {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: #000;
+      color: #47243C;
+      font-family: Inter, Helvetica, Arial, sans-serif;
+      font-weight: 900;
+      font-size: clamp(48px, 14vw, 96px);
+      letter-spacing: 0.05em;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @media (max-width: 768px) {
+      canvas { display: none; }
+      #mobileFallback { display: flex; }
+    }
   </style>
 </head>
-<body>
 
+<body>
+<div id="mobileFallback">SEVAK</div>
 <canvas id="c"></canvas>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
 
 <script>
-  // Scene
-  const scene = new THREE.Scene();
+/* ---------------- BASIC SETUP ---------------- */
+const canvas = document.getElementById('c');
+const scene = new THREE.Scene();
 
-  // Camera
-  const camera = new THREE.PerspectiveCamera(
-    60,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    100
-  );
-  camera.position.z = 4;
+const camera = new THREE.PerspectiveCamera(
+  45,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  100
+);
+camera.position.z = 5;
 
-  // Renderer
-  const renderer = new THREE.WebGLRenderer({
-    canvas: document.getElementById('c'),
-    antialias: true,
-    alpha: true
-  });
-  renderer.setSize(window.innerWidth, window.innerHeight);
+const renderer = new THREE.WebGLRenderer({
+  canvas,
+  antialias: true,
+  alpha: true
+});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-  // Canvas Text Texture
-  const textCanvas = document.createElement('canvas');
-  textCanvas.width = 1024;
-  textCanvas.height = 512;
-  const ctx = textCanvas.getContext('2d');
+/* ---------------- TEXTURE CREATION ---------------- */
+function createTextTexture(color) {
+  const c = document.createElement('canvas');
+  c.width = 1600;
+  c.height = 600;
+  const ctx = c.getContext('2d');
 
-  ctx.fillStyle = 'black';
-  ctx.fillRect(0, 0, textCanvas.width, textCanvas.height);
-
-  ctx.font = 'bold 220px Arial';
-  ctx.fillStyle = '#47243C';
+  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.font = '900 260px Inter, Helvetica, Arial, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('SEVAK', textCanvas.width / 2, textCanvas.height / 2);
+  ctx.fillStyle = color;
+  ctx.fillText('SEVAK', c.width / 2, c.height / 2);
 
-  const texture = new THREE.CanvasTexture(textCanvas);
+  return new THREE.CanvasTexture(c);
+}
 
-  // Plane
-  const geometry = new THREE.PlaneGeometry(3, 1.5);
-  const material = new THREE.MeshBasicMaterial({
-    map: texture,
-    transparent: true
+/* ---------------- EXTRUDED LOGO GROUP ---------------- */
+const logo = new THREE.Group();
+scene.add(logo);
+
+const depth = 16;
+for (let i = depth; i >= 0; i--) {
+  const front = i === 0;
+
+  const material = new THREE.MeshPhysicalMaterial({
+    map: createTextTexture(front ? '#47243C' : '#1f0d17'),
+    transparent: true,
+    roughness: front ? 0.15 : 0.6,
+    metalness: front ? 0.6 : 0.1,
+    clearcoat: front ? 0.7 : 0.0,
+    clearcoatRoughness: 0.2
   });
 
-  const plane = new THREE.Mesh(geometry, material);
-  scene.add(plane);
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(4, 1.6),
+    material
+  );
 
-  // Animate
-  let mouseX = 0;
-  let mouseY = 0;
+  mesh.position.z = -i * 0.025;
+  logo.add(mesh);
+}
 
-  window.addEventListener('mousemove', e => {
-    mouseX = (e.clientX / window.innerWidth - 0.5);
-    mouseY = (e.clientY / window.innerHeight - 0.5);
-  });
+/* ---------------- LIGHTING (CERAMIC / GLASS FEEL) ---------------- */
+scene.add(new THREE.AmbientLight(0xffffff, 0.35));
 
-  function animate() {
-    plane.rotation.y += (mouseX - plane.rotation.y) * 0.05;
-    plane.rotation.x += (-mouseY - plane.rotation.x) * 0.05;
-    renderer.render(scene, camera);
-    requestAnimationFrame(animate);
+const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
+keyLight.position.set(4, 5, 6);
+scene.add(keyLight);
+
+const rimLight = new THREE.DirectionalLight(0xffffff, 0.9);
+rimLight.position.set(-5, 2, 4);
+scene.add(rimLight);
+
+/* ---------------- INTERACTION STATE ---------------- */
+let mouseX = 0;
+let mouseY = 0;
+let scrollTarget = 0;
+let userInteracted = false;
+
+/* Mouse */
+window.addEventListener('mousemove', e => {
+  mouseX = (e.clientX / window.innerWidth - 0.5) * 0.8;
+  mouseY = (e.clientY / window.innerHeight - 0.5) * 0.5;
+  userInteracted = true;
+});
+
+/* Scroll (Apple-style) */
+window.addEventListener('scroll', () => {
+  scrollTarget = window.scrollY * 0.0006;
+  userInteracted = true;
+});
+
+/* ---------------- ANIMATION LOOP ---------------- */
+let autoRotate = 1.2; // auto rotate strength
+let time = 0;
+
+function animate() {
+  time += 0.01;
+
+  /* Auto-rotate on load, fades after interaction */
+  if (!userInteracted && autoRotate > 0) {
+    logo.rotation.y += 0.004 * autoRotate;
+    autoRotate -= 0.003;
   }
 
-  animate();
+  /* Smooth inertial motion */
+  logo.rotation.y += (mouseX + scrollTarget - logo.rotation.y) * 0.06;
+  logo.rotation.x += (-mouseY - logo.rotation.x) * 0.06;
 
-  window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  });
+  /* Subtle premium float */
+  logo.position.y = Math.sin(time) * 0.04;
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+
+animate();
+
+/* ---------------- RESIZE ---------------- */
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
 </script>
-
 </body>
 </html>
