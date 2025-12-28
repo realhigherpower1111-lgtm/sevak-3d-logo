@@ -1,4 +1,4 @@
-const canvas = document.querySelector('#scene');
+const canvas = document.getElementById('scene');
 
 // Scene
 const scene = new THREE.Scene();
@@ -21,67 +21,46 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-// Lighting
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-scene.add(ambientLight);
+// Lights
+scene.add(new THREE.AmbientLight(0xffffff, 0.5));
 
 const keyLight = new THREE.DirectionalLight(0xffffff, 1);
 keyLight.position.set(5, 5, 10);
 scene.add(keyLight);
 
-const fillLight = new THREE.DirectionalLight(0xffffff, 0.6);
-fillLight.position.set(-5, -3, 5);
-scene.add(fillLight);
+// Text
+const text = new TroikaThreeText.Text();
+text.text = 'SEVAK';
+text.fontSize = 3;
+text.color = 0x47243C;
+text.anchorX = 'center';
+text.anchorY = 'middle';
+text.position.set(0, 0, 0);
+text.material.metalness = 0.4;
+text.material.roughness = 0.25;
 
-// Load Font & Create Text
-const loader = new THREE.FontLoader();
-loader.load(
-  './fonts/helvetiker_bold.typeface.json',
-  (font) => {
-    const geometry = new THREE.TextGeometry('SEVAK', {
-      font: font,
-      size: 3,
-      height: 0.9,
-      curveSegments: 24,
-      bevelEnabled: true,
-      bevelThickness: 0.08,
-      bevelSize: 0.04,
-      bevelOffset: 0,
-      bevelSegments: 10
-    });
+scene.add(text);
+text.sync();
 
-    geometry.center();
+// Mouse interaction
+let mouseX = 0;
+let mouseY = 0;
 
-    const material = new THREE.MeshStandardMaterial({
-      color: 0x47243C,
-      metalness: 0.4,
-      roughness: 0.25
-    });
+window.addEventListener('mousemove', (e) => {
+  mouseX = (e.clientX / window.innerWidth - 0.5) * 1.2;
+  mouseY = (e.clientY / window.innerHeight - 0.5) * 1.2;
+});
 
-    const textMesh = new THREE.Mesh(geometry, material);
-    scene.add(textMesh);
+// Animate
+function animate() {
+  text.rotation.y += (mouseX - text.rotation.y) * 0.05;
+  text.rotation.x += (-mouseY - text.rotation.x) * 0.05;
 
-    // Mouse interaction
-    let mouseX = 0;
-    let mouseY = 0;
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
 
-    window.addEventListener('mousemove', (e) => {
-      mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
-      mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
-    });
-
-    // Animate
-    const animate = () => {
-      textMesh.rotation.y += (mouseX - textMesh.rotation.y) * 0.05;
-      textMesh.rotation.x += (-mouseY - textMesh.rotation.x) * 0.05;
-
-      renderer.render(scene, camera);
-      requestAnimationFrame(animate);
-    };
-
-    animate();
-  }
-);
+animate();
 
 // Resize
 window.addEventListener('resize', () => {
