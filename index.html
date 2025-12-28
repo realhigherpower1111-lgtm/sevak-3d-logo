@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>SEVAK TEST</title>
+  <title>SEVAK 3D</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     html, body {
@@ -18,53 +18,82 @@
 </head>
 <body>
 
-  <canvas id="c"></canvas>
+<canvas id="c"></canvas>
 
-  <!-- Three.js ONLY -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
 
-  <script>
-    // SCENE
-    const scene = new THREE.Scene();
+<script>
+  // Scene
+  const scene = new THREE.Scene();
 
-    // CAMERA
-    const camera = new THREE.PerspectiveCamera(
-      60,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      100
-    );
-    camera.position.z = 3;
+  // Camera
+  const camera = new THREE.PerspectiveCamera(
+    60,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    100
+  );
+  camera.position.z = 4;
 
-    // RENDERER
-    const renderer = new THREE.WebGLRenderer({
-      canvas: document.getElementById('c'),
-      antialias: true
-    });
+  // Renderer
+  const renderer = new THREE.WebGLRenderer({
+    canvas: document.getElementById('c'),
+    antialias: true,
+    alpha: true
+  });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  // Canvas Text Texture
+  const textCanvas = document.createElement('canvas');
+  textCanvas.width = 1024;
+  textCanvas.height = 512;
+  const ctx = textCanvas.getContext('2d');
+
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, textCanvas.width, textCanvas.height);
+
+  ctx.font = 'bold 220px Arial';
+  ctx.fillStyle = '#47243C';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('SEVAK', textCanvas.width / 2, textCanvas.height / 2);
+
+  const texture = new THREE.CanvasTexture(textCanvas);
+
+  // Plane
+  const geometry = new THREE.PlaneGeometry(3, 1.5);
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: true
+  });
+
+  const plane = new THREE.Mesh(geometry, material);
+  scene.add(plane);
+
+  // Animate
+  let mouseX = 0;
+  let mouseY = 0;
+
+  window.addEventListener('mousemove', e => {
+    mouseX = (e.clientX / window.innerWidth - 0.5);
+    mouseY = (e.clientY / window.innerHeight - 0.5);
+  });
+
+  function animate() {
+    plane.rotation.y += (mouseX - plane.rotation.y) * 0.05;
+    plane.rotation.x += (-mouseY - plane.rotation.x) * 0.05;
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
-
-    // GEOMETRY (BIG RED CUBE)
-    const geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
-    const material = new THREE.MeshStandardMaterial({ color: 0xff0000 });
-    const cube = new THREE.Mesh(geometry, material);
-    scene.add(cube);
-
-    // LIGHT
-    const light = new THREE.DirectionalLight(0xffffff, 2);
-    light.position.set(2, 2, 5);
-    scene.add(light);
-
-    // ANIMATE
-    function animate() {
-      cube.rotation.x += 0.01;
-      cube.rotation.y += 0.01;
-      renderer.render(scene, camera);
-      requestAnimationFrame(animate);
-    }
-
-    animate();
-  </script>
+  });
+</script>
 
 </body>
 </html>
-
