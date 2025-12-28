@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>SEVAK 3D Logo</title>
+  <title>SEVAK</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
@@ -18,17 +18,17 @@
       display: block;
     }
 
-    /* Mobile fallback */
+    /* Mobile fallback (minimal, clean) */
     #mobileFallback {
       display: none;
       position: absolute;
       inset: 0;
       background: #000;
-      color: #47243C;
-      font-family: Inter, Helvetica, Arial, sans-serif;
-      font-weight: 900;
+      color: #5a2b47;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont;
+      font-weight: 800;
       font-size: clamp(48px, 14vw, 96px);
-      letter-spacing: 0.05em;
+      letter-spacing: 0.08em;
       align-items: center;
       justify-content: center;
     }
@@ -47,17 +47,17 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
 
 <script>
-/* ---------------- BASIC SETUP ---------------- */
+/* ---------------- CORE SETUP ---------------- */
 const canvas = document.getElementById('c');
 const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera(
-  45,
+  42,
   window.innerWidth / window.innerHeight,
   0.1,
   100
 );
-camera.position.z = 5;
+camera.position.z = 5.4;
 
 const renderer = new THREE.WebGLRenderer({
   canvas,
@@ -67,7 +67,7 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-/* ---------------- TEXTURE CREATION ---------------- */
+/* ---------------- TEXTURE ---------------- */
 function createTextTexture(color) {
   const c = document.createElement('canvas');
   c.width = 1600;
@@ -75,7 +75,7 @@ function createTextTexture(color) {
   const ctx = c.getContext('2d');
 
   ctx.clearRect(0, 0, c.width, c.height);
-  ctx.font = '900 260px Inter, Helvetica, Arial, sans-serif';
+  ctx.font = '800 250px Inter, Helvetica, Arial, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = color;
@@ -84,81 +84,79 @@ function createTextTexture(color) {
   return new THREE.CanvasTexture(c);
 }
 
-/* ---------------- EXTRUDED LOGO GROUP ---------------- */
+/* ---------------- LOGO (REDUCED, CLEAN DEPTH) ---------------- */
 const logo = new THREE.Group();
 scene.add(logo);
 
-const depth = 16;
-for (let i = depth; i >= 0; i--) {
-  const front = i === 0;
+const layers = 10; // reduced = cleaner
+for (let i = layers; i >= 0; i--) {
+  const isFront = i === 0;
 
   const material = new THREE.MeshPhysicalMaterial({
-    map: createTextTexture(front ? '#47243C' : '#1f0d17'),
+    map: createTextTexture(isFront ? '#5a2b47' : '#1a0b13'),
     transparent: true,
-    roughness: front ? 0.15 : 0.6,
-    metalness: front ? 0.6 : 0.1,
-    clearcoat: front ? 0.7 : 0.0,
-    clearcoatRoughness: 0.2
+    roughness: isFront ? 0.22 : 0.7,
+    metalness: isFront ? 0.45 : 0.1,
+    clearcoat: isFront ? 0.55 : 0.0,
+    clearcoatRoughness: 0.25
   });
 
   const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(4, 1.6),
+    new THREE.PlaneGeometry(3.9, 1.55),
     material
   );
 
-  mesh.position.z = -i * 0.025;
+  mesh.position.z = -i * 0.022;
   logo.add(mesh);
 }
 
-/* ---------------- LIGHTING (CERAMIC / GLASS FEEL) ---------------- */
-scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+/* ---------------- LIGHTING (BRIGHT BUT SOFT) ---------------- */
+scene.add(new THREE.AmbientLight(0xffffff, 0.45));
 
-const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
-keyLight.position.set(4, 5, 6);
-scene.add(keyLight);
+const key = new THREE.DirectionalLight(0xffffff, 1.1);
+key.position.set(4, 5, 6);
+scene.add(key);
 
-const rimLight = new THREE.DirectionalLight(0xffffff, 0.9);
-rimLight.position.set(-5, 2, 4);
-scene.add(rimLight);
+const fill = new THREE.DirectionalLight(0xffffff, 0.6);
+fill.position.set(-5, 1, 4);
+scene.add(fill);
 
-/* ---------------- INTERACTION STATE ---------------- */
-let mouseX = 0;
-let mouseY = 0;
+/* ---------------- INTERACTION ---------------- */
+let targetX = 0;
+let targetY = 0;
 let scrollTarget = 0;
-let userInteracted = false;
+let interacted = false;
 
-/* Mouse */
 window.addEventListener('mousemove', e => {
-  mouseX = (e.clientX / window.innerWidth - 0.5) * 0.8;
-  mouseY = (e.clientY / window.innerHeight - 0.5) * 0.5;
-  userInteracted = true;
+  targetX = (e.clientX / window.innerWidth - 0.5) * 0.6;
+  targetY = (e.clientY / window.innerHeight - 0.5) * 0.35;
+  interacted = true;
 });
 
-/* Scroll (Apple-style) */
 window.addEventListener('scroll', () => {
-  scrollTarget = window.scrollY * 0.0006;
-  userInteracted = true;
+  scrollTarget = window.scrollY * 0.00045;
+  interacted = true;
 });
 
-/* ---------------- ANIMATION LOOP ---------------- */
-let autoRotate = 1.2; // auto rotate strength
+/* ---------------- ANIMATION ---------------- */
 let time = 0;
+let auto = 1.0;
 
 function animate() {
-  time += 0.01;
+  time += 0.008;
 
-  /* Auto-rotate on load, fades after interaction */
-  if (!userInteracted && autoRotate > 0) {
-    logo.rotation.y += 0.004 * autoRotate;
-    autoRotate -= 0.003;
+  // Subtle intro motion
+  if (!interacted && auto > 0) {
+    logo.rotation.y += 0.0025 * auto;
+    auto -= 0.002;
   }
 
-  /* Smooth inertial motion */
-  logo.rotation.y += (mouseX + scrollTarget - logo.rotation.y) * 0.06;
-  logo.rotation.x += (-mouseY - logo.rotation.x) * 0.06;
+  // Intelligent easing (slower = premium)
+  logo.rotation.y += (targetX + scrollTarget - logo.rotation.y) * 0.045;
+  logo.rotation.x += (-targetY - logo.rotation.x) * 0.045;
 
-  /* Subtle premium float */
-  logo.position.y = Math.sin(time) * 0.04;
+  // Almost invisible float
+  logo.position.y = Math.sin(time) * 0.025;
 
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
