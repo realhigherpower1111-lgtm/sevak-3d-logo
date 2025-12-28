@@ -63,7 +63,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 /* ================= TEXTURE ================= */
 function makeTextTexture(text, color) {
   const c = document.createElement('canvas');
-  c.width = 800;
+  c.width = 700;
   c.height = 600;
   const ctx = c.getContext('2d');
 
@@ -84,6 +84,11 @@ scene.add(logo);
 const letters = ['S', 'E', 'V', 'A', 'K'];
 const letterMeshes = [];
 
+/* Final tight spacing */
+const finalSpacing = 1.15;
+/* Initial wide spacing (clearly separated) */
+const startSpacing = 3.6;
+
 letters.forEach((char, i) => {
   const mat = new THREE.MeshPhysicalMaterial({
     map: makeTextTexture(char, '#5a2b47'),
@@ -99,12 +104,13 @@ letters.forEach((char, i) => {
     mat
   );
 
-  mesh.position.x = (i - 2) * 1.3;   // final aligned position
-  mesh.userData.targetX = mesh.position.x;
+  /* Final target position */
+  const targetX = (i - 2) * finalSpacing;
+  mesh.userData.targetX = targetX;
 
-  // start split
-  mesh.position.x *= 1.9;
-  mesh.position.z = -1.5;
+  /* Start far apart */
+  mesh.position.x = (i - 2) * startSpacing;
+  mesh.position.z = -1.8;
 
   letterMeshes.push(mesh);
   logo.add(mesh);
@@ -133,33 +139,33 @@ window.addEventListener('mousemove', e => {
 function animate() {
   requestAnimationFrame(animate);
 
-  /* ---------- INTRO TIMELINE ---------- */
+  /* ---------- INTRO: LETTER ASSEMBLY ---------- */
   if (intro < 1) {
-    intro += 0.006;
+    intro += 0.008;
     const ease = 1 - Math.pow(1 - intro, 3);
 
-    // camera dolly
-    camera.position.z = 9 - ease * 3.5;
+    /* Camera dolly in */
+    camera.position.z = 9 - ease * 3.8;
 
-    // logo rotation settle
+    /* Logo rotation settle */
     logo.rotation.y = Math.PI * 1.2 * (1 - ease);
     logo.rotation.x = Math.PI * 0.25 * (1 - ease);
 
-    // letter merge
+    /* Letters glide inward */
     letterMeshes.forEach(m => {
-      m.position.x += (m.userData.targetX - m.position.x) * 0.08;
-      m.position.z += (0 - m.position.z) * 0.08;
+      m.position.x += (m.userData.targetX - m.position.x) * 0.12;
+      m.position.z += (0 - m.position.z) * 0.12;
     });
 
   } else {
-    /* ---------- IDLE PREMIUM MOTION ---------- */
-    logo.rotation.y += 0.002;
+    /* ---------- PREMIUM IDLE MOTION ---------- */
+    logo.rotation.y += 0.0022;
     logo.rotation.x += Math.sin(Date.now() * 0.0012) * 0.0006;
 
     logo.rotation.y += (mouseX - logo.rotation.y) * 0.035;
     logo.rotation.x += (-mouseY - logo.rotation.x) * 0.035;
 
-    // micro-motion (haptic illusion)
+    /* Micro-motion */
     logo.position.y = Math.sin(Date.now() * 0.002) * 0.015;
   }
 
@@ -182,3 +188,4 @@ window.addEventListener('resize', () => {
 </script>
 </body>
 </html>
+
