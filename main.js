@@ -36,7 +36,7 @@ scene.add(fillLight);
 // Load Font & Create Text
 const loader = new THREE.FontLoader();
 loader.load(
-  'https://threejs.org/examples/fonts/helvetiker_bold.typeface.json',
+  './fonts/helvetiker_bold.typeface.json',
   (font) => {
     const geometry = new THREE.TextGeometry('SEVAK', {
       font: font,
@@ -89,3 +89,4 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
+
